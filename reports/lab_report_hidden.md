@@ -1,49 +1,4 @@
-"""Report generation helper.
-
-Renders a complete lab report from MetricsReport data, following the structure of
-reports/lab_report_template.md.
-"""
-
-from __future__ import annotations
-
-from pathlib import Path
-
-from .metrics import MetricsReport
-
-
-def _summary_table(metrics: MetricsReport) -> str:
-    return (
-        "| Metric | Value |\n"
-        "|---|---:|\n"
-        f"| Total scenarios | {metrics.total_scenarios} |\n"
-        f"| Success rate | {metrics.success_rate:.0%} |\n"
-        f"| Avg nodes visited | {metrics.avg_nodes_visited:.2f} |\n"
-        f"| Total retries | {metrics.total_retries} |\n"
-        f"| Total interrupts (HITL) | {metrics.total_interrupts} |\n"
-        f"| Resume success | {metrics.resume_success} |\n"
-    )
-
-
-def _scenario_table(metrics: MetricsReport) -> str:
-    header = (
-        "| Scenario | Expected | Actual | Success | Retries | Interrupts "
-        "| Approval req/obs | Latency(ms) |\n"
-        "|---|---|---|:---:|---:|---:|:---:|---:|\n"
-    )
-    rows = []
-    for m in metrics.scenario_metrics:
-        ok = "✅" if m.success else "❌"
-        appr = f"{m.approval_required}/{m.approval_observed}"
-        rows.append(
-            f"| {m.scenario_id} | {m.expected_route} | {m.actual_route} | {ok} | "
-            f"{m.retry_count} | {m.interrupt_count} | {appr} | {m.latency_ms} |"
-        )
-    return header + "\n".join(rows) + "\n"
-
-
-def render_report(metrics: MetricsReport) -> str:
-    """Render a complete markdown lab report from metrics data."""
-    return f"""# Day 08 Lab Report — LangGraph Agentic Orchestration
+# Day 08 Lab Report — LangGraph Agentic Orchestration
 
 ## 1. Team / student
 
@@ -106,9 +61,43 @@ list channels are append-only so the audit trail survives retry loops.
 
 ## 4. Scenario results
 
-{_summary_table(metrics)}
+| Metric | Value |
+|---|---:|
+| Total scenarios | 24 |
+| Success rate | 100% |
+| Avg nodes visited | 9.04 |
+| Total retries | 33 |
+| Total interrupts (HITL) | 8 |
+| Resume success | True |
 
-{_scenario_table(metrics)}
+
+| Scenario | Expected | Actual | Success | Retries | Interrupts | Approval req/obs | Latency(ms) |
+|---|---|---|:---:|---:|---:|:---:|---:|
+| G01_simple | simple | simple | ✅ | 0 | 0 | False/False | 4469 |
+| G02_simple_nokw | simple | simple | ✅ | 0 | 0 | False/False | 3139 |
+| G03_simple_tricky | simple | simple | ✅ | 0 | 0 | False/False | 3603 |
+| G04_tool | tool | tool | ✅ | 0 | 0 | False/False | 7244 |
+| G05_tool_nokw | tool | tool | ✅ | 0 | 0 | False/False | 4968 |
+| G06_tool_indirect | tool | tool | ✅ | 0 | 0 | False/False | 21011 |
+| G07_missing | missing_info | missing_info | ✅ | 0 | 0 | False/False | 3706 |
+| G08_missing_subtle | missing_info | missing_info | ✅ | 0 | 0 | False/False | 4673 |
+| G09_missing_oneword | missing_info | missing_info | ✅ | 0 | 0 | False/False | 3692 |
+| G10_risky_easy | risky | risky | ✅ | 3 | 1 | True/True | 6417 |
+| G11_risky_indirect | risky | risky | ✅ | 3 | 1 | True/True | 6863 |
+| G12_risky_polite | risky | risky | ✅ | 3 | 1 | True/True | 7084 |
+| G13_risky_imperative | risky | risky | ✅ | 3 | 1 | True/True | 6963 |
+| G14_risky_disguised | risky | risky | ✅ | 3 | 1 | True/True | 6186 |
+| G15_error_easy | error | error | ✅ | 2 | 0 | False/False | 4059 |
+| G16_error_nokw | error | error | ✅ | 2 | 0 | False/False | 2923 |
+| G17_error_narrative | error | error | ✅ | 2 | 0 | False/False | 3380 |
+| G18_dead | error | error | ✅ | 1 | 0 | False/False | 1239 |
+| G19_priority_risky_vs_tool | risky | risky | ✅ | 3 | 1 | True/True | 8879 |
+| G20_priority_risky_vs_simple | risky | risky | ✅ | 2 | 1 | True/True | 9016 |
+| G21_priority_tool_vs_error | tool | tool | ✅ | 3 | 0 | False/False | 7659 |
+| G22_priority_missing_vs_simple | missing_info | missing_info | ✅ | 0 | 0 | False/False | 3658 |
+| G23_long_simple | simple | simple | ✅ | 0 | 0 | False/False | 4166 |
+| G24_long_risky | risky | risky | ✅ | 3 | 1 | True/True | 7089 |
+
 
 ## 5. Failure analysis
 
@@ -156,11 +145,3 @@ typed registry + per-tool timeouts; (2) add `Send()` parallel fan-out for
 independent lookups; (3) add LangSmith tracing for latency/cost observability;
 (4) move approvals to a durable queue so HITL survives restarts; (5) add
 property-based tests over generated queries to harden classification.
-"""
-
-
-def write_report(metrics: MetricsReport, output_path: str | Path) -> None:
-    """Write the rendered report to a file."""
-    path = Path(output_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(render_report(metrics), encoding="utf-8")

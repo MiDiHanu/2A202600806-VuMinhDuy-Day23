@@ -1,0 +1,24 @@
+{"id":"G01_simple","query":"What are your business hours?","expected_route":"simple","tags":["simple","easy"]}
+{"id":"G02_simple_nokw","query":"How does the loyalty program work and what benefits do members get?","expected_route":"simple","tags":["simple","no_keyword"]}
+{"id":"G03_simple_tricky","query":"I want to understand the process before I make any changes to my account","expected_route":"simple","tags":["simple","tricky","looks_risky"]}
+{"id":"G04_tool","query":"Track my shipment for order 7890","expected_route":"tool","tags":["tool","easy"]}
+{"id":"G05_tool_nokw","query":"What's happening with the package I ordered last Tuesday?","expected_route":"tool","tags":["tool","no_keyword","natural_language"]}
+{"id":"G06_tool_indirect","query":"I placed something three days ago and haven't heard anything since","expected_route":"tool","tags":["tool","indirect","ambiguous"]}
+{"id":"G07_missing","query":"Please handle it","expected_route":"missing_info","tags":["missing_info","easy"]}
+{"id":"G08_missing_subtle","query":"Yeah the thing from yesterday","expected_route":"missing_info","tags":["missing_info","vague","no_context"]}
+{"id":"G09_missing_oneword","query":"Help","expected_route":"missing_info","tags":["missing_info","ultra_short"]}
+{"id":"G10_risky_easy","query":"Cancel all pending orders for this customer","expected_route":"risky","requires_approval":true,"tags":["risky","easy"]}
+{"id":"G11_risky_indirect","query":"We need to permanently close this person's account and wipe their data","expected_route":"risky","requires_approval":true,"tags":["risky","indirect","no_keyword"]}
+{"id":"G12_risky_polite","query":"Could you please go ahead and process a full reimbursement for the customer's last three transactions?","expected_route":"risky","requires_approval":true,"tags":["risky","polite","verbose"]}
+{"id":"G13_risky_imperative","query":"Push the updated pricing to all 50,000 subscriber accounts right now","expected_route":"risky","requires_approval":true,"tags":["risky","bulk_action","no_keyword"]}
+{"id":"G14_risky_disguised","query":"Just mark their subscription as terminated and stop all future billing cycles","expected_route":"risky","requires_approval":true,"tags":["risky","disguised","multi_action"]}
+{"id":"G15_error_easy","query":"Service unavailable when connecting to payment gateway","expected_route":"error","should_retry":true,"tags":["error","easy"]}
+{"id":"G16_error_nokw","query":"The system just hung and nothing came back after 30 seconds","expected_route":"error","should_retry":true,"tags":["error","natural_language","no_keyword"]}
+{"id":"G17_error_narrative","query":"I tried three times already and each time the screen goes blank and nothing happens","expected_route":"error","should_retry":true,"tags":["error","narrative","frustration"]}
+{"id":"G18_dead","query":"Total system meltdown in the billing pipeline and we cannot proceed at all","expected_route":"error","should_retry":true,"max_attempts":1,"tags":["dead_letter"]}
+{"id":"G19_priority_risky_vs_tool","query":"Look up this customer's order history and then issue a full refund for everything","expected_route":"risky","requires_approval":true,"tags":["priority","risky_over_tool"]}
+{"id":"G20_priority_risky_vs_simple","query":"I need to understand how to remove my credit card from your system","expected_route":"risky","requires_approval":true,"tags":["priority","risky_over_simple","tricky"]}
+{"id":"G21_priority_tool_vs_error","query":"Can you check if the API endpoint is responding or if it's completely down?","expected_route":"tool","tags":["priority","tool_vs_error","ambiguous"]}
+{"id":"G22_priority_missing_vs_simple","query":"Do the thing","expected_route":"missing_info","tags":["priority","ultra_vague"]}
+{"id":"G23_long_simple","query":"I was talking to one of your representatives yesterday about the warranty terms and they mentioned something about extended coverage options but I didn't quite catch all the details so could you explain the full warranty policy?","expected_route":"simple","tags":["simple","long_query","verbose"]}
+{"id":"G24_long_risky","query":"After reviewing the compliance audit results with the legal team we have decided that all user records from the decommissioned EU region need to be permanently purged from both primary and backup databases by end of week","expected_route":"risky","requires_approval":true,"tags":["risky","formal","long","compliance"]}

@@ -1,0 +1,3 @@
+scenarios_path: data/senarios_hidding.json
+checkpointer: memory
+report_path: reports/lab_report_hidden.md
