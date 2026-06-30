@@ -1,0 +1,72 @@
+[
+  {
+    "question_id": 1,
+    "question": "Nhân viên được nghỉ bao nhiêu ngày khi kết hôn?",
+    "model_answer": "Nhân viên được nghỉ 3 ngày làm việc có lương khi kết hôn.",
+    "human_label": 1,
+    "human_note": "Chính xác và đầy đủ."
+  },
+  {
+    "question_id": 5,
+    "question": "Muốn mua thiết bị trị giá 55 triệu cần ai phê duyệt?",
+    "model_answer": "Cần Giám đốc phòng ban phê duyệt.",
+    "human_label": 0,
+    "human_note": "Sai — 55 triệu vượt ngưỡng 50 triệu nên phải CEO phê duyệt, không phải Director."
+  },
+  {
+    "question_id": 12,
+    "question": "Thưởng Tết tối thiểu cho nhân viên chính thức có từ 6 tháng trở lên là bao nhiêu?",
+    "model_answer": "Nhân viên được thưởng Tết tối thiểu 1 tháng lương.",
+    "human_label": 1,
+    "human_note": "Đúng và súc tích."
+  },
+  {
+    "question_id": 21,
+    "question": "Một nhân viên Senior có 9 năm thâm niên được nghỉ bao nhiêu ngày phép năm và lương trong khoảng nào?",
+    "model_answer": "Được nghỉ 18 ngày phép (15 cơ bản + 3 thâm niên). Lương Senior từ 20 đến 35 triệu.",
+    "human_label": 1,
+    "human_note": "Tính đúng, bao gồm cả phép và lương."
+  },
+  {
+    "question_id": 23,
+    "question": "Nhân viên được tài trợ khóa học 25 triệu, nghỉ việc sau 8 tháng. Phải hoàn trả bao nhiêu?",
+    "model_answer": "Hoàn trả 25 triệu vì chưa đủ 1 năm cam kết.",
+    "human_label": 1,
+    "human_note": "Đúng — 100% hoàn trả vì nghỉ trước 12 tháng."
+  },
+  {
+    "question_id": 29,
+    "question": "Nhân viên tạm ứng 8 triệu, chưa thanh toán sau 30 ngày. Ai phê duyệt và phí phạt là bao nhiêu?",
+    "model_answer": "Trưởng phòng phê duyệt. Phạt 2% tháng trên 8 triệu.",
+    "human_label": 0,
+    "human_note": "Thiếu — 8 triệu cần cả Kế toán trưởng. Phạt phải tính pro-rata cho 15 ngày quá hạn = 80.000 VNĐ."
+  },
+  {
+    "question_id": 33,
+    "question": "Nhân viên Manager có thâm niên 12 năm: tổng phụ cấp hàng tháng và số ngày phép năm?",
+    "model_answer": "Phép: 19 ngày. Phụ cấp: 1.500.000 VNĐ/tháng.",
+    "human_label": 1,
+    "human_note": "Tính đúng cả hai."
+  },
+  {
+    "question_id": 41,
+    "question": "Nhân viên được nghỉ bao nhiêu ngày phép năm?",
+    "model_answer": "Nhân viên được nghỉ 12 ngày phép năm.",
+    "human_label": 0,
+    "human_note": "Sai — trả lời theo v2023 đã hết hiệu lực. v2024 hiện hành là 15 ngày."
+  },
+  {
+    "question_id": 46,
+    "question": "Nhân viên thử việc có được nghỉ phép năm không?",
+    "model_answer": "Nhân viên thử việc không được nghỉ phép năm và phải xin nghỉ không lương nếu cần.",
+    "human_label": 1,
+    "human_note": "Đúng hoàn toàn, bao gồm hành động thay thế."
+  },
+  {
+    "question_id": 50,
+    "question": "Nhân viên Manager có thể dùng VPN cá nhân (NordVPN) khi WFH không?",
+    "model_answer": "Được, miễn là đảm bảo kết nối an toàn.",
+    "human_label": 0,
+    "human_note": "Sai — VPN cá nhân bị cấm theo chính sách VPN v1.3. Phải dùng VPN WireGuard của công ty."
+  }
+]

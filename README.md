@@ -1,246 +1,229 @@
-# Day 08 Lab — LangGraph Agentic Orchestration
+# Lab 24 — Production Eval + Guardrail Stack
 
-Build a production-style LangGraph workflow for a support-ticket agent with state management, conditional routing, retry loops, human-in-the-loop approval, persistence, and metrics.
+Chào mừng các bạn đến với **Day 24**! 🎉
 
-This is a **starter skeleton**. All node implementations, routing logic, and graph wiring are left as `TODO(student)` — you must build them from scratch.
-
----
-
-## How you will be graded
-
-| Category | Points | What we look for |
-|---|---:|---|
-| Architecture & state schema | 15 | Typed state with correct reducers, student-added fields, lean serializable state |
-| Graph construction & wiring | 15 | All nodes registered, edges correct, conditional edges work, graph compiles |
-| LLM integration | 15 | classify_node + answer_node use real LLM calls (structured output, grounded generation) |
-| Graph behavior | 20 | All scenario routes correct, bounded retry loop, HITL approval path, all routes terminate |
-| Persistence & recovery | 10 | Checkpointer wired, thread_id per run, state history or crash-resume evidence |
-| Metrics & tests | 15 | `metrics.json` valid, scenario coverage, tests pass, meaningful counts |
-| Report & demo | 10 | Architecture explanation, metrics table, failure analysis, improvement ideas |
-
-**Grade bands:**
-- **90–100**: Production-quality graph + LLM integration + metrics + report + at least one bonus extension
-- **75–89**: Core graph works with LLM, metrics valid, report explains trade-offs
-- **60–74**: Graph mostly works but LLM integration, persistence, or report incomplete
-- **< 60**: Does not run, hard-codes scenarios, or lacks LLM integration/metrics/report
-
-> **Critical rule**: Do NOT hard-code answers to specific scenario queries. Your graph must route based on **LLM classification and state logic**, not by matching exact scenario IDs. We grade with additional hidden scenarios.
+Hôm nay chúng ta sẽ xây dựng lớp **đánh giá (evaluation)** và **bảo vệ (guardrail)** hoàn chỉnh cho RAG pipeline mà các bạn đã xây dựng ở Day 18. Nếu Day 18 là "làm cho RAG chạy được", thì Day 24 là "làm cho RAG đáng tin cậy trong production".
 
 ---
 
-## LLM Integration Requirements
+## Bức tranh tổng thể
 
-This lab requires real LLM API calls in specific nodes:
+```
+[Day 18 Pipeline của bạn]
+        │
+        ├──► Phase A: RAGAS 50q ──────────► Biết pipeline YẾU ở đâu
+        │     (3 distributions)
+        │
+        ├──► Phase B: LLM-as-Judge ───────► Đo độ tin cậy của eval chính nó
+        │     (pairwise + Cohen κ)
+        │
+        └──► Phase C: NeMo Guardrails ────► Bảo vệ pipeline khỏi inputs độc hại
+              (Presidio PII + NeMo rails)
+```
 
-| Node | Requirement | Pattern |
+Sau lab này, các bạn sẽ có một **complete eval + guardrail stack** có thể deploy thẳng vào production.
+
+---
+
+## Yêu cầu tiên quyết
+
+- Đã hoàn thành **Lab 18** (các module M1–M5 + pipeline.py đã chạy được)
+- Python 3.11+
+- Docker (chạy Qdrant)
+- OpenAI API key
+
+---
+
+## Setup (15 phút — làm TRƯỚC khi tính giờ lab)
+
+### Bước 1: Copy code từ Day 18
+
+```bash
+# Copy toàn bộ src/ từ Day 18 của bạn vào đây
+cp -r <đường-dẫn-Day18>/src/m*.py src/
+cp <đường-dẫn-Day18>/src/pipeline.py src/
+```
+
+> **Lưu ý:** M4 (`m4_eval.py`) của bạn cần đã implement xong `evaluate_ragas()` —
+> Phase A sẽ dùng hàm này để chạy trên bộ test set 50 câu hỏi mới.
+
+### Bước 2: Cài đặt môi trường
+
+```bash
+docker compose up -d                      # Khởi động Qdrant
+
+pip install -r requirements.txt
+python -m spacy download en_core_web_lg   # Cần cho Presidio PII detection
+
+cp .env.example .env                      # Điền OPENAI_API_KEY vào .env
+```
+
+### Bước 3: Generate answers (quan trọng!)
+
+```bash
+python setup_answers.py
+```
+
+Script này sẽ chạy Day 18 pipeline của bạn trên **50 câu hỏi** và lưu kết quả vào `answers_50q.json`. Quá trình mất khoảng 5–10 phút. Đây là input cho Phase A.
+
+---
+
+## Cấu trúc thư mục
+
+```
+Day24-Track3-Eval-Guard/
+│
+├── src/
+│   ├── m1_chunking.py      ← copy từ Day 18 của bạn
+│   ├── m2_search.py        ← copy từ Day 18 của bạn
+│   ├── m3_rerank.py        ← copy từ Day 18 của bạn
+│   ├── m4_eval.py          ← copy từ Day 18 của bạn (★ cần implement xong)
+│   ├── m5_enrichment.py    ← copy từ Day 18 của bạn
+│   ├── pipeline.py         ← copy từ Day 18 của bạn
+│   │
+│   ├── phase_a_ragas.py    ★ BẠN IMPLEMENT — Tasks 1–4
+│   ├── phase_b_judge.py    ★ BẠN IMPLEMENT — Tasks 5–8
+│   └── phase_c_guard.py    ★ BẠN IMPLEMENT — Tasks 9–12
+│
+├── guardrails/
+│   ├── config.yml          ← NeMo Guardrails config (đã có sẵn)
+│   └── rails.co            ← Colang dialogue flows (có thể mở rộng)
+│
+├── data/                   ← Corpus HR policy (25 tài liệu tiếng Việt)
+│
+├── test_set_50q.json       ← 50 câu hỏi, 3 distributions
+├── human_labels_10q.json   ← 10 nhãn nhân để tính Cohen κ
+├── adversarial_set_20.json ← 20 inputs tấn công để test guardrail
+│
+├── setup_answers.py        ← Chạy pipeline → answers_50q.json
+├── check_lab.py            ← Kiểm tra trước khi nộp
+│
+├── reports/
+│   ├── ragas_50q.json      ★ auto-generated (Phase A)
+│   ├── judge_results.json  ★ auto-generated (Phase B)
+│   ├── guard_results.json  ★ auto-generated (Phase C)
+│   └── blueprint.md        ★ Task 13 — bạn điền tay
+│
+└── analysis/
+    ├── failure_clusters.md ★ Phân tích bottom-10 (điền sau Phase A)
+    └── bias_report.md      ★ Phân tích bias (điền sau Phase B)
+```
+
+---
+
+## Các phases
+
+### Phase A — RAGAS Production Eval (30 phút)
+
+Chạy RAGAS trên **50 câu hỏi** với **3 distributions** để tìm ra điểm yếu của pipeline.
+
+| Distribution | Số câu | Đặc điểm |
 |---|---|---|
-| `classify_node` | **MUST use LLM** | Structured output (`.with_structured_output()`) for intent classification |
-| `answer_node` | **MUST use LLM** | Grounded response generation using tool_results/context |
-| `evaluate_node` | **SHOULD use LLM** (bonus) | LLM-as-judge to evaluate tool results quality |
+| `factual` | 20 | Tra cứu chính sách đơn giản, 1 tài liệu |
+| `multi_hop` | 20 | Kết hợp nhiều tài liệu, tính toán, suy luận |
+| `adversarial` | 10 | Bẫy: version conflicts (v2023 vs v2024), negation traps |
 
-A helper is provided in `src/langgraph_agent_lab/llm.py` — it reads your API key from `.env` and returns a LangChain chat model.
-
-```bash
-# Install your preferred LLM provider
-pip install langchain-openai    # for OpenAI
-# OR
-pip install langchain-anthropic  # for Anthropic
-
-# Configure .env
-cp .env.example .env
-# Edit .env and set OPENAI_API_KEY or ANTHROPIC_API_KEY
-```
-
----
-
-## Understanding `scenarios.jsonl`
-
-The file `data/sample/scenarios.jsonl` contains **7 sample scenarios** your graph must handle:
-
-```jsonl
-{"id":"S01_simple",      "query":"How do I reset my password?",                          "expected_route":"simple"}
-{"id":"S02_tool",        "query":"Please lookup order status for order 12345",            "expected_route":"tool"}
-{"id":"S03_missing",     "query":"Can you fix it?",                                      "expected_route":"missing_info"}
-{"id":"S04_risky",       "query":"Refund this customer and send confirmation email",      "expected_route":"risky"}
-{"id":"S05_error",       "query":"Timeout failure while processing request",              "expected_route":"error"}
-{"id":"S06_delete",      "query":"Delete customer account after support verification",    "expected_route":"risky"}
-{"id":"S07_dead_letter", "query":"System failure cannot recover after multiple attempts", "expected_route":"error", "max_attempts":1}
-```
-
-### What each field means
-
-| Field | Purpose |
-|---|---|
-| `id` | Unique scenario identifier — used in metrics output |
-| `query` | The user's support-ticket text — input to your graph |
-| `expected_route` | Which route your `classify_node` should pick: `simple`, `tool`, `missing_info`, `risky`, or `error` |
-| `requires_approval` | If `true`, your graph must hit the approval/HITL node before answering |
-| `should_retry` | If `true`, scenario simulates transient tool failure requiring retry |
-| `max_attempts` | Override retry limit (default 3). S07 sets this to 1, so it exhausts retries immediately → dead letter |
-| `tags` | Descriptive labels for your reference |
-
-### How scenarios flow through your code
-
-```
-scenarios.jsonl  →  scenarios.py loads them  →  cli.py runs each through your graph
-                                              →  metrics.py collects results
-                                              →  outputs/metrics.json
-```
-
-1. `make run-scenarios` reads `data/sample/scenarios.jsonl`
-2. For each scenario, it calls `initial_state(scenario)` → `graph.invoke(state)`
-3. After execution, it checks: did `actual_route` match `expected_route`? Did HITL fire when required?
-4. Results go to `outputs/metrics.json`
-
-### How to design your classification
-
-Your `classify_node` should use an LLM to classify intent. Design a prompt that routes queries:
-
-| Route | Intent |
-|---|---|
-| `risky` | Actions with side effects: refunds, deletions, sending emails, cancellations |
-| `tool` | Information lookups: order status, tracking, search queries |
-| `missing_info` | Vague/incomplete queries lacking actionable context |
-| `error` | System failures: timeouts, crashes, service unavailable |
-| `simple` | General questions answerable without tools or actions |
-
-**Priority matters**: risky > tool > missing_info > error > simple. Design your LLM prompt to respect this priority.
-
-### Adding your own test scenarios
-
-You can add extra lines to `scenarios.jsonl` to test edge cases:
-
-```jsonl
-{"id":"S08_custom","query":"Cancel my subscription immediately","expected_route":"risky","requires_approval":true,"tags":["custom"]}
-```
-
-The grading script will also test with scenarios you haven't seen.
-
----
-
-## Quick start
+**4 tasks cần implement:** `group_by_distribution()` → `run_ragas_50q()` → `bottom_10()` → `cluster_analysis()`
 
 ```bash
-# Option A: conda
-conda activate ai-lab
-pip install -e '.[dev]'
-pip install langchain-openai  # or langchain-anthropic
+python src/phase_a_ragas.py
+# Output: reports/ragas_50q.json
+```
 
-# Option B: venv
-python -m venv .venv
-source .venv/bin/activate
-pip install -e '.[dev]'
-pip install langchain-openai  # or langchain-anthropic
+### Phase B — LLM-as-Judge (30 phút)
 
-# Configure LLM
-cp .env.example .env
-# Edit .env — set your API key
+Dùng LLM để so sánh cặp answers và đo độ đồng thuận với nhãn của con người.
 
-# Verify setup
-make test  # some tests will fail until you implement TODOs
+- **Pairwise judge:** LLM chọn answer A hay B tốt hơn
+- **Swap-and-average:** Đổi thứ tự A/B để phát hiện position bias
+- **Cohen's κ:** So sánh với 10 nhãn nhân trong `human_labels_10q.json`
+- **Bias report:** Đo position bias + verbosity bias
+
+```bash
+python src/phase_b_judge.py
+# Output: reports/judge_results.json
+```
+
+### Phase C — NeMo Guardrails (30 phút)
+
+Xây dựng lớp bảo vệ nhiều tầng trước và sau RAG pipeline.
+
+```
+Input → [Presidio PII] → [NeMo Input Rail] → RAG → [NeMo Output Rail] → Response
+```
+
+- **Presidio:** Phát hiện CCCD, số điện thoại VN, email trong query
+- **NeMo Input Rail:** Chặn jailbreak, off-topic, prompt injection
+- **NeMo Output Rail:** Kiểm tra response trước khi trả về user
+- **P95 Latency:** Đo latency từng tầng (Presidio ≈ <10ms, NeMo ≈ 200–500ms)
+
+```bash
+python src/phase_c_guard.py
+# Output: reports/guard_results.json
 ```
 
 ---
 
-## Step-by-step workflow
+## Bộ test set 50 câu hỏi
 
-### Phase 1: State + nodes (0–90 min) — worth 30 points
+Bộ test set này được thiết kế đặc biệt để **stress-test** pipeline của bạn:
 
-1. **`state.py`** — Review existing fields. Add missing fields as you discover them:
-   - `evaluation_result` for retry loop gate
-   - `pending_question` for clarification flow
-   - `proposed_action` for risky action flow
-   - `approval` for HITL decisions
-
-2. **`llm.py`** — Review the helper. Configure `.env` with your API key.
-
-3. **`nodes.py`** — Implement all 10 node functions:
-   - `classify_node`: **LLM + structured output** for intent classification
-   - `tool_node`: mock tool with error simulation
-   - `evaluate_node`: tool result quality check (LLM-as-judge for bonus)
-   - `answer_node`: **LLM-generated** grounded response
-   - `ask_clarification_node`: generate clarification question
-   - `risky_action_node`: prepare action for approval
-   - `approval_node`: mock approval with optional interrupt()
-   - `retry_or_fallback_node`: increment attempt counter
-   - `dead_letter_node`: handle max retry exhaustion
-   - `finalize_node`: emit final audit event
-
-### Phase 2: Routing + graph (90–150 min) — worth 35 points
-
-4. **`routing.py`** — Implement all 4 routing functions from scratch
-5. **`graph.py`** — Build the complete StateGraph:
-   - Import and register all 11 nodes
-   - Wire fixed + conditional edges
-   - All paths must terminate at finalize → END
-6. **Verify**: `make test` and `make run-scenarios`
-
-### Phase 3: Persistence (150–180 min) — worth 10 points
-
-7. **`persistence.py`** — Implement SQLite checkpointer
-   - Show evidence: thread_id per run, state history, or crash-resume
-
-### Phase 4: Metrics & report (180–240 min) — worth 25 points
-
-8. **`report.py`** — Implement `render_report()` from metrics data
-9. **Run**: `make run-scenarios` → `outputs/metrics.json`
-10. **Validate**: `make grade-local`
-11. **Report**: Fill `reports/lab_report.md`
-
-### Phase 5: Extensions (240+ min) — push toward 90+
-
-Pick one or more:
-- **Parallel fan-out**: Use `Send()` for concurrent tool calls
-- **Real HITL**: `LANGGRAPH_INTERRUPT=true` with `interrupt()`
-- **Streamlit UI**: Build approval/reject interface
-- **Time travel**: `get_state_history()` replay
-- **Crash recovery**: SQLite checkpoint survives process kill
-- **Graph diagram**: `graph.get_graph().draw_mermaid()`
+- **Factual:** Câu hỏi thẳng, nhưng corpus có nhiều phiên bản policy (v2023/v2024, v1/v2) → pipeline cần biết chọn phiên bản đúng
+- **Multi-hop:** Tính toán lương thử việc, phí phạt tạm ứng, ngày phép tích lũy → cần kết hợp nhiều tài liệu
+- **Adversarial:** Cố tình hỏi về policy cũ, dùng phủ định ("có nên tự xử lý không?"), hỏi VPN cá nhân → đây là những câu pipeline hay nhầm nhất
 
 ---
 
-## Make commands
+## Chạy tests
 
-| Command | What it does |
+```bash
+pytest tests/ -v                     # Chạy toàn bộ test suite
+pytest tests/test_phase_a.py -v      # Chỉ Phase A
+pytest tests/test_phase_b.py -v      # Chỉ Phase B
+pytest tests/test_phase_c.py -v      # Chỉ Phase C
+```
+
+---
+
+## Kiểm tra trước khi nộp
+
+```bash
+python check_lab.py
+```
+
+Checklist:
+- [ ] Day 18 source files đã copy vào `src/`
+- [ ] `answers_50q.json` đã được generate
+- [ ] 0 TODOs còn lại trong `src/phase_*.py`
+- [ ] `reports/ragas_50q.json`, `judge_results.json`, `guard_results.json` đã có
+- [ ] `reports/blueprint.md` đã điền đầy đủ
+- [ ] `pytest tests/` pass toàn bộ
+
+---
+
+## Deliverables (push lên GitHub trước khi hết giờ)
+
+1. **`src/phase_a_ragas.py`** — Tasks 1–4 (RAGAS eval)
+2. **`src/phase_b_judge.py`** — Tasks 5–8 (LLM Judge)
+3. **`src/phase_c_guard.py`** — Tasks 9–12 (Guardrails)
+4. **`reports/blueprint.md`** — Task 13 (CI/CD blueprint, điền tay)
+5. **`analysis/failure_clusters.md`** — Phân tích Phase A
+6. **`analysis/bias_report.md`** — Phân tích Phase B
+
+---
+
+## Điểm số
+
+| Phase | Điểm |
 |---|---|
-| `make install` | Install project + dev dependencies |
-| `make test` | Run pytest |
-| `make lint` | Run ruff linter |
-| `make typecheck` | Run mypy type checker |
-| `make run-scenarios` | Execute all scenarios → `outputs/metrics.json` |
-| `make grade-local` | Validate metrics.json schema |
-| `make clean` | Remove caches and generated files |
+| Phase A: RAGAS (Tasks 1–4) | 30 |
+| Phase B: Judge (Tasks 5–8) | 35 |
+| Phase C: Guard (Tasks 9–12 + blueprint) | 35 |
+| **Tổng** | **100** |
+| Bonus (κ>0.6, pass rate≥18/20, adversarial avg<factual avg) | **+10** |
+
+Chi tiết xem thêm: [`RUBRIC.md`](RUBRIC.md)
 
 ---
 
-## Submission checklist
-
-- [ ] All `TODO(student)` sections implemented
-- [ ] `.env` configured with LLM API key
-- [ ] `classify_node` uses real LLM call with structured output
-- [ ] `answer_node` uses real LLM call for grounded responses
-- [ ] `make test` passes
-- [ ] `make run-scenarios` generates valid `outputs/metrics.json`
-- [ ] `make grade-local` passes validation
-- [ ] `reports/lab_report.md` completed with architecture, metrics, and analysis
-- [ ] Can explain at least one route and one failure mode during demo
-
-**For 90+ points, also include:**
-- [ ] At least one bonus extension (persistence, parallel fan-out, HITL, time travel, diagram)
-- [ ] Evidence of extension in report (screenshot, log output, or diagram)
-
----
-
-## Common pitfalls
-
-1. **Missing state fields**: The starter intentionally omits some fields from `AgentState`. You must add `evaluation_result`, `pending_question`, `proposed_action`, and `approval` as you implement nodes that need them.
-
-2. **LLM structured output**: Use `.with_structured_output(YourModel)` to get reliable classification. Raw text parsing is fragile and will fail on hidden test scenarios.
-
-3. **Unbounded retry**: Always check `attempt < max_attempts` in `route_after_retry`. Without this bound, error scenarios loop forever.
-
-4. **Graph wiring**: Every path must end at `finalize → END`. Missing this means the graph hangs for some scenarios.
-
-5. **SqliteSaver API**: In `langgraph-checkpoint-sqlite` 3.x, use `SqliteSaver(conn=sqlite3.connect(...))` not `SqliteSaver.from_conn_string()`.
-
-6. **API key not set**: If you get "No LLM API key found", check your `.env` file and make sure it's loaded (use `python-dotenv` or export manually).
+Chúc các bạn code vui! 🚀 Nếu gặp vấn đề, hãy raise tay — mentors luôn sẵn sàng hỗ trợ.

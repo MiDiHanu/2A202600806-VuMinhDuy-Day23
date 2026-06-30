@@ -1,8 +1,8 @@
 # Day 08 Lab Report — Điều Phối Agent LangGraph
 
-## 1. Thông tin sinh viên
+## 1. Thông tin nhóm / sinh viên
 
-- Họ tên: Vũ Minh Duy
+- Nhóm: Individual
 - Repo/commit: phase2-track3-day8-langgraph-agent (main)
 - Nhà cung cấp LLM: Google Gemini (cloud) thông qua `langchain-google-genai`
 

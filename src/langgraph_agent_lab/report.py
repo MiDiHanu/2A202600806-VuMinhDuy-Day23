@@ -47,7 +47,7 @@ def render_report(metrics: MetricsReport) -> str:
 
 ## 1. Team / student
 
-- Name: anhuynh219
+- Name: MiDiHanu
 - Repo/commit: phase2-track3-day8-langgraph-agent (main)
 - LLM provider: Google Gemini (cloud) via `langchain-google-genai`
 
