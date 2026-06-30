@@ -1,46 +1,46 @@
 # Day 08 Lab Report
 
-## 1. Team / student
+## 1. Thông tin sinh viên
 
-- Name:
-- Repo/commit:
-- Date:
+- Họ tên: Vũ Minh Duy
+- MSSV: 2A202600806
+- Ngày nộp:
 
-## 2. Architecture
+## 2. Thiết kế hệ thống
 
-Describe your graph nodes, edges, state fields, and reducers.
+Mô tả các node, cạnh, trường state và reducer của bạn.
 
-## 3. State schema
+## 3. Cấu trúc State
 
-List important fields and whether they are overwrite or append-only.
+Liệt kê các trường quan trọng và loại reducer tương ứng.
 
-| Field | Reducer | Why |
+| Trường | Reducer | Lý do |
 |---|---|---|
-| messages | append | audit conversation/events |
-| route | overwrite | current route only |
+| messages | append | ghi nhận hội thoại/sự kiện |
+| route | overwrite | chỉ route hiện tại |
 
-## 4. Scenario results
+## 4. Kết quả kịch bản
 
-Paste the key metrics from `outputs/metrics.json`.
+Dán các chỉ số chính từ `outputs/metrics.json`.
 
-| Scenario | Expected route | Actual route | Success | Retries | Interrupts |
+| Kịch bản | Route kỳ vọng | Route thực tế | Thành công | Retry | Interrupt |
 |---|---|---|---:|---:|---:|
 
-## 5. Failure analysis
+## 5. Phân tích lỗi
 
-Describe at least two failure modes you considered:
+Mô tả ít nhất hai chế độ lỗi bạn đã xem xét:
 
-1. Retry or tool failure:
-2. Risky action without approval:
+1. Retry hoặc lỗi tool:
+2. Action rủi ro không có phê duyệt:
 
-## 6. Persistence / recovery evidence
+## 6. Persistence / phục hồi
 
-Explain how you used checkpointer, thread id, state history, or crash-resume.
+Giải thích cách bạn sử dụng checkpointer, thread id, state history, hoặc crash-resume.
 
-## 7. Extension work
+## 7. Phần mở rộng
 
-Describe any extension you completed: SQLite/Postgres, time travel, fan-out/fan-in, graph diagram, tracing.
+Mô tả bất kỳ phần mở rộng nào bạn đã hoàn thành: SQLite/Postgres, time travel, fan-out/fan-in, biểu đồ graph, tracing.
 
-## 8. Improvement plan
+## 8. Kế hoạch cải thiện
 
-If you had one more day, what would you productionize first?
+Nếu bạn có thêm một ngày, điều gì bạn sẽ productionize trước?
